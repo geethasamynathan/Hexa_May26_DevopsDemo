@@ -47,7 +47,7 @@ public IActionResult Health()
     return Ok(new
     {
         Status = "Product API is running",
-        Version = "v2",
+        Version = "v3",
         DeployedBy = "Jenkins CI/CD",
         CheckedAt = DateTime.Now
     });
