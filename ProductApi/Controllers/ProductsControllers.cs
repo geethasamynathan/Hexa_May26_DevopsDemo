@@ -41,4 +41,15 @@ public class ProductsController : ControllerBase
 
         return CreatedAtAction(nameof(GetProductById), new { id = product.Id }, product);
     }
+    [HttpGet("health")]
+public IActionResult Health()
+{
+    return Ok(new
+    {
+        Status = "Product API is running",
+        Version = "v2",
+        DeployedBy = "Jenkins CI/CD",
+        CheckedAt = DateTime.Now
+    });
+}
 }

@@ -1,0 +1,84 @@
+pipeline {
+    agent any
+
+    environment {
+        APP_FOLDER = 'ProductApi'
+        IMAGE_NAME = 'productapi'
+        IMAGE_TAG = 'latest'
+        CONTAINER_NAME = 'productapi-container'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                echo 'Checking out source code from GitHub...'
+                checkout scm
+            }
+        }
+
+        stage('Show Tool Versions') {
+            steps {
+                echo 'Checking installed tool versions...'
+                bat 'git --version'
+                bat 'dotnet --info'
+                bat 'docker --version'
+                bat 'docker compose version'
+            }
+        }
+
+        stage('Restore') {
+            steps {
+                echo 'Restoring NuGet packages...'
+                bat 'dotnet restore %APP_FOLDER%\\ProductApi.csproj'
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo 'Building ProductApi...'
+                bat 'dotnet build %APP_FOLDER%\\ProductApi.csproj --configuration Release --no-restore'
+            }
+        }
+
+        stage('Publish') {
+            steps {
+                echo 'Publishing ProductApi...'
+                bat 'dotnet publish %APP_FOLDER%\\ProductApi.csproj --configuration Release --no-build --output %APP_FOLDER%\\publish-output'
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                echo 'Building Docker image...'
+                bat 'cd %APP_FOLDER% && docker build -t %IMAGE_NAME%:%IMAGE_TAG% .'
+            }
+        }
+
+        stage('Docker Deploy') {
+            steps {
+                echo 'Deploying ProductApi using Docker Compose...'
+                bat 'cd %APP_FOLDER% && docker compose down || exit 0'
+                bat 'cd %APP_FOLDER% && docker compose up -d --build'
+            }
+        }
+
+        stage('Verify Deployment') {
+            steps {
+                echo 'Verifying ProductApi container...'
+                bat 'docker ps'
+                bat 'docker logs %CONTAINER_NAME% --tail 50'
+            }
+        }
+    }
+
+    post {
+        success {
+            echo 'ProductApi CI/CD pipeline completed successfully.'
+            echo 'Test URL: http://localhost:8085/api/products/health'
+        }
+
+        failure {
+            echo 'ProductApi CI/CD pipeline failed. Check console output.'
+        }
+    }
+}
